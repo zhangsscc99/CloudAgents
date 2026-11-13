@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 const primaryLinks = [
-  { to: '/new', label: 'New Agent', icon: Plus, accent: true },
+  { to: '/new', label: 'New agent', icon: Plus, accent: true },
   { to: '/agents', label: 'Agents', icon: Bot },
   { to: '/runs', label: 'Runs', icon: Activity },
 ];
@@ -65,7 +65,7 @@ export default function Shell() {
         <div className="runtime-card">
           <div className="runtime-heading">
             <span className="live-dot" />
-            <span>Local runtime · codex executes on this host</span>
+            <span>Local runtime</span>
             <Radio size={13} />
           </div>
           <div className="runtime-meta">

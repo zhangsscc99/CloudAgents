@@ -58,10 +58,9 @@ export default function RunsPage() {
   return (
     <div className="page wide-page">
       <PageIntro
-        eyebrow="Runs"
-        title="Agent runs"
-        description="Inspect manual sessions and scheduled automations across your local workspace."
-        actions={<span className="record-count"><strong>{runs.length}</strong> records</span>}
+        title="Runs"
+        description="Codex runs from agents and automations on this machine."
+        actions={<span className="record-count"><strong>{runs.length}</strong> runs</span>}
       />
 
       <div className="run-stats-grid reveal delay-1">
@@ -90,7 +89,7 @@ export default function RunsPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search agents or repositories…"
+              placeholder="Search automations or repositories"
             />
             {search && (
               <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={13} /></button>
@@ -109,12 +108,12 @@ export default function RunsPage() {
         {error ? (
           <ErrorState message={error} />
         ) : loading && runs.length === 0 ? (
-          <Loading label="Reading the execution ledger…" />
+          <Loading label="Loading runs…" />
         ) : runs.length === 0 ? (
           <EmptyState
             icon={TerminalSquare}
-            title="No matching runs"
-            body="Try a different status or search term."
+            title={search || status !== 'all' ? 'No matching runs' : 'No runs yet'}
+            body={search || status !== 'all' ? 'Try a different status or search term.' : 'Runs will appear here.'}
           />
         ) : (
           <div className="data-table-wrap">

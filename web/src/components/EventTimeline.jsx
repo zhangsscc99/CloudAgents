@@ -265,8 +265,7 @@ export default function EventTimeline({ events }) {
     <section className="timeline-panel">
       <header className="timeline-header">
         <div>
-          <p className="eyebrow">Live trace</p>
-          <h2>Agent activity <span>{events.length}</span></h2>
+          <h2>Activity <span>{events.length}</span></h2>
         </div>
         <div className="timeline-tools">
           <div className="trace-filter">
@@ -278,7 +277,7 @@ export default function EventTimeline({ events }) {
           </div>
           {!follow && (
             <button type="button" className="follow-button" onClick={() => setFollow(true)}>
-              <ChevronDown size={14} /> Jump to live
+              <ChevronDown size={14} /> Jump to latest
             </button>
           )}
         </div>
@@ -287,7 +286,7 @@ export default function EventTimeline({ events }) {
         {filtered.length ? (
           <div className="timeline-list">
             {filtered.map((event) => <EventEntry key={`${event.id}-${event.seq}`} event={event} />)}
-            {events.length > 0 && <div className="timeline-end"><span /><span>live event stream</span><span /></div>}
+            {events.length > 0 && <div className="timeline-end"><span /><span>End of activity</span><span /></div>}
           </div>
         ) : (
           <div className="timeline-empty">

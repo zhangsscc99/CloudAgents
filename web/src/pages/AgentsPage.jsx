@@ -23,7 +23,7 @@ function RepoCard({ repo, index }) {
       <div className="repo-card-top">
         <span className="repo-icon"><FolderGit2 size={20} /></span>
         <span className={`repo-kind ${repo.isGit ? '' : 'plain'}`}>
-          {repo.isGit ? 'Git repo' : 'Directory'}
+          {repo.isGit ? 'Git repository' : 'Directory'}
         </span>
         <ArrowUpRight className="repo-arrow" size={17} />
       </div>
@@ -31,7 +31,7 @@ function RepoCard({ repo, index }) {
       <p className="mono path-line">{repo.path}</p>
       <div className="repo-card-footer">
         <span><TerminalSquare size={13} /> {repo.runCount} run{repo.runCount === 1 ? '' : 's'}</span>
-        <span>{repo.lastRunAt ? formatRelative(repo.lastRunAt) : 'Ready to start'}</span>
+        <span>{repo.lastRunAt ? formatRelative(repo.lastRunAt) : 'No runs yet'}</span>
       </div>
       {repo.runningCount > 0 && (
         <span className="repo-live"><span /> {repo.runningCount} active</span>
@@ -42,7 +42,7 @@ function RepoCard({ repo, index }) {
 
 export default function AgentsPage() {
   const { data, error, loading, reload } = useRemote('/api/agents');
-  if (loading && !data) return <Loading label="Mapping your workspaces…" />;
+  if (loading && !data) return <Loading label="Loading agents…" />;
   if (error && !data) return <ErrorState message={error} onRetry={() => reload()} />;
 
   const repos = data?.repos || [];
@@ -52,9 +52,8 @@ export default function AgentsPage() {
   return (
     <div className="page">
       <PageIntro
-        eyebrow="Agent workspace"
-        title={<>Put your codebase<br /><em>in motion.</em></>}
-        description="Launch Codex against any project on this machine. Every command, message, and session is captured locally."
+        title="Agents"
+        description="Run Codex in repositories on this machine."
         actions={(
           <Link to="/new" className="button primary">
             <Plus size={16} /> New agent
@@ -69,7 +68,7 @@ export default function AgentsPage() {
         </div>
         <div className="metric">
           <span className="metric-icon blue"><TerminalSquare size={17} /></span>
-          <div><strong>{counts.total || 0}</strong><span>Total runs</span></div>
+          <div><strong>{counts.total || 0}</strong><span>Runs</span></div>
         </div>
         <div className="metric">
           <span className="metric-icon orange"><CheckCircle2 size={17} /></span>
@@ -77,17 +76,16 @@ export default function AgentsPage() {
         </div>
         <div className="metric">
           <span className="metric-icon neutral"><Clock3 size={17} /></span>
-          <div><strong>{counts.running || 0}</strong><span>Running now</span></div>
+          <div><strong>{counts.running || 0}</strong><span>Running</span></div>
         </div>
       </section>
 
       <section className="content-section reveal delay-2">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Repositories</p>
-            <h2>Choose a launchpad</h2>
+            <h2>Repositories</h2>
           </div>
-          <span className="section-note">{repos.length} directories discovered</span>
+          <span className="section-note">{repos.length} director{repos.length === 1 ? 'y' : 'ies'}</span>
         </div>
         {repos.length ? (
           <div className="repo-grid">
@@ -105,8 +103,7 @@ export default function AgentsPage() {
       <section className="content-section reveal delay-3">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Recent activity</p>
-            <h2>Latest agent runs</h2>
+            <h2>Runs</h2>
           </div>
           <Link to="/runs" className="text-link">View all runs <ArrowUpRight size={14} /></Link>
         </div>
@@ -131,7 +128,7 @@ export default function AgentsPage() {
           <EmptyState
             icon={TerminalSquare}
             title="No runs yet"
-            body="Start an agent and its full execution trace will appear here."
+            body="Runs started from an agent will appear here."
             action={undefined}
           />
         )}

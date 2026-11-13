@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  Check,
   Code2,
   FolderGit2,
   Play,
@@ -13,13 +12,13 @@ import {
 import { api } from '../api.js';
 import { useRemote } from '../hooks.js';
 import { repoName } from '../utils.js';
-import { ErrorState, Loading, Segmented, Toggle } from '../components/Common.jsx';
+import { ErrorState, Loading, RepoDirectoryField, Segmented, Toggle } from '../components/Common.jsx';
 
 const effortCopy = {
-  low: 'Fast',
-  medium: 'Balanced',
-  high: 'Deep',
-  xhigh: 'Maximum',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  xhigh: 'Extra high',
 };
 
 export default function NewAgentPage() {
@@ -73,7 +72,7 @@ export default function NewAgentPage() {
     }
   }
 
-  if ((config.loading || repos.loading) && !config.data) return <Loading label="Preparing Codex runtime…" />;
+  if ((config.loading || repos.loading) && !config.data) return <Loading label="Loading agent settings…" />;
   if ((config.error && !config.data) || (repos.error && !repos.data)) {
     return <ErrorState message={config.error || repos.error} />;
   }
@@ -84,24 +83,21 @@ export default function NewAgentPage() {
         <ArrowLeft size={15} /> Agents
       </button>
       <header className="editor-heading reveal">
-        <p className="eyebrow">Deploy an agent</p>
-        <h1>What should Codex<br /><em>build next?</em></h1>
-        <p>Give it a clear outcome. Codex will inspect the repository, choose tools, and work inside the selected directory.</p>
+        <h1>New agent</h1>
+        <p>Run Codex in a repository on this machine.</p>
       </header>
 
       <form className="agent-composer reveal delay-1" onSubmit={submit}>
-        <div className="composer-glow" />
         <div className="composer-topline">
-          <span className="live-dot" />
-          <span>LOCAL EXECUTION</span>
+          <span>Prompt</span>
           <span className="composer-separator" />
-          <span>CODEX SESSION</span>
+          <span className="mono">{repoName(form.repoDir) || 'No repository selected'}</span>
         </div>
         <textarea
           className="prompt-textarea"
           value={form.prompt}
           onChange={(event) => update('prompt', event.target.value)}
-          placeholder="Describe the task, the desired outcome, and anything Codex should verify…"
+          placeholder="Describe the task and expected result."
           rows={7}
           autoFocus
           required
@@ -126,27 +122,14 @@ export default function NewAgentPage() {
       <div className="agent-config-grid reveal delay-2">
         <div className="config-panel">
           <div className="panel-label"><FolderGit2 size={15} /> Working directory</div>
-          <input
-            className="input mono"
-            list="repo-options"
+          <RepoDirectoryField
+            repos={repos.data?.repos || []}
             value={form.repoDir}
-            onChange={(event) => update('repoDir', event.target.value)}
-            placeholder="/www/project"
+            onChange={(value) => update('repoDir', value)}
+            inputId="new-agent-repo-directory"
+            listId="new-agent-repo-options"
             required
           />
-          <datalist id="repo-options">
-            {repos.data?.repos?.map((repo) => (
-              <option key={repo.path} value={repo.path}>{repo.name}</option>
-            ))}
-          </datalist>
-          <div className="input-hint">
-            {selectedRepo ? (
-              <>
-                <span className="mini-check"><Check size={11} /></span>
-                {selectedRepo.isGit ? 'Git repository detected' : 'Directory detected'}
-              </>
-            ) : 'Choose a discovered directory or enter an absolute path.'}
-          </div>
         </div>
 
         <div className="config-panel">
@@ -179,7 +162,7 @@ export default function NewAgentPage() {
       </div>
 
       <details className="advanced-panel reveal delay-3">
-        <summary><ShieldAlert size={15} /> Execution controls <span>Advanced</span></summary>
+        <summary><ShieldAlert size={15} /> Execution options <span>Advanced</span></summary>
         <div className="advanced-body">
           <Toggle
             checked={form.bypassSandbox}
@@ -197,7 +180,7 @@ export default function NewAgentPage() {
       </details>
 
       <aside className="execution-plan reveal delay-3">
-        <div className="plan-heading"><Terminal size={15} /><span>Execution plan</span></div>
+        <div className="plan-heading"><Terminal size={15} /><span>Command preview</span></div>
         <div className="plan-command mono">
           <span className="prompt-mark">$</span>
           <div>

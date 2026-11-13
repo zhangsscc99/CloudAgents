@@ -115,7 +115,7 @@ export default function RunDetailPage() {
     }
   }
 
-  if (loading && !run) return <Loading label="Opening agent trace…" />;
+  if (loading && !run) return <Loading label="Loading run…" />;
   if (error && !run) return <ErrorState message={error} />;
   if (!run) return null;
 
@@ -203,7 +203,7 @@ export default function RunDetailPage() {
       <form className={`follow-up-box reveal ${!run.session_id ? 'disabled-box' : ''}`} onSubmit={submitFollowUp}>
         <div className="follow-up-heading">
           <MessageSquareReply size={15} />
-          <span>Continue this session</span>
+          <span>Follow up</span>
           {run.session_id ? (
             <span className="session-pill mono">session {run.session_id.slice(0, 8)}</span>
           ) : (
@@ -218,11 +218,11 @@ export default function RunDetailPage() {
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') submitFollowUp(event);
           }}
-          placeholder={run.session_id ? 'Ask Codex to refine, verify, or continue…' : 'A session ID will appear once Codex starts.'}
+          placeholder={run.session_id ? 'Send another instruction.' : 'A session ID will appear when Codex starts.'}
           disabled={!run.session_id || active}
         />
         <div className="follow-up-footer">
-          <span><CornerDownLeft size={13} /> Codex resumes with full session context</span>
+          <span><CornerDownLeft size={13} /> Continue the Codex session</span>
           <button className="button primary small" type="submit" disabled={!followUp.trim() || active || !run.session_id || sending}>
             {sending ? <LoaderCircle size={14} className="spin" /> : <Send size={14} />}
             Send follow-up

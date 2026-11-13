@@ -6,12 +6,10 @@ import {
   CheckCircle2,
   Clock3,
   Cog,
-  GitPullRequestArrow,
+  FolderGit2,
   History,
   Plus,
   Power,
-  Sparkles,
-  Zap,
 } from 'lucide-react';
 import { api, automationPayload } from '../api.js';
 import { useRemote } from '../hooks.js';
@@ -23,7 +21,7 @@ function AutomationCard({ automation, onToggle, toggling }) {
   return (
     <article className={`automation-card reveal ${automation.enabled ? '' : 'is-paused'}`}>
       <div className="automation-card-head">
-        <div className="automation-symbol"><Zap size={18} /></div>
+        <div className="automation-symbol"><CalendarClock size={17} /></div>
         <button
           type="button"
           className={`power-toggle ${automation.enabled ? 'on' : ''}`}
@@ -32,7 +30,7 @@ function AutomationCard({ automation, onToggle, toggling }) {
           aria-label={automation.enabled ? 'Disable automation' : 'Enable automation'}
         >
           <Power size={13} />
-          {automation.enabled ? 'Active' : 'Paused'}
+          {automation.enabled ? 'Enabled' : 'Paused'}
         </button>
       </div>
       <Link to={`/automations/${automation.id}`} className="automation-title-link">
@@ -57,13 +55,13 @@ function AutomationCard({ automation, onToggle, toggling }) {
         </div>
       </div>
       <div className="automation-meta">
-        <span><GitPullRequestArrow size={13} /> {repoName(automation.repo_dir)}</span>
-        <span><Sparkles size={13} /> {automation.model}</span>
+        <span><FolderGit2 size={13} /> {repoName(automation.repo_dir)}</span>
+        <span className="mono">{automation.model}</span>
       </div>
       <div className="automation-stats">
-        <span><CheckCircle2 size={13} /> {automation.stats.successful_7d} passed</span>
-        <span><History size={13} /> {automation.stats.total} total</span>
-        <Link to={`/automations/${automation.id}?tab=history`}>History ↗</Link>
+        <span><CheckCircle2 size={13} /> {automation.stats.successful_7d} succeeded</span>
+        <span><History size={13} /> {automation.stats.total} run{automation.stats.total === 1 ? '' : 's'}</span>
+        <Link to={`/automations/${automation.id}?tab=history`}>Runs ↗</Link>
       </div>
     </article>
   );
@@ -97,7 +95,7 @@ export default function AutomationsPage() {
     }
   }
 
-  if (loading && !data) return <Loading label="Loading automation fleet…" />;
+  if (loading && !data) return <Loading label="Loading automations…" />;
   if (error && !data) return <ErrorState message={error} onRetry={() => reload()} />;
   const automations = data?.automations || [];
   const enabled = automations.filter((automation) => automation.enabled).length;
@@ -106,9 +104,8 @@ export default function AutomationsPage() {
   return (
     <div className="page">
       <PageIntro
-        eyebrow="Always-on operations"
-        title={<>Work that keeps<br /><em>working.</em></>}
-        description="Schedule Codex against your repositories. Automations run locally, keep their context, and leave a complete audit trail."
+        title="Automations"
+        description="Scheduled agents that run Codex in your repositories."
         actions={(
           <button type="button" className="button primary" onClick={() => navigate('/automations/new')}>
             <Plus size={16} /> New automation
@@ -116,27 +113,27 @@ export default function AutomationsPage() {
         )}
       />
 
-      <div className="automation-overview reveal delay-1">
-        <div className="automation-hero-copy">
-          <span className="fleet-signal"><span /> SCHEDULER ONLINE</span>
-          <h2>{enabled} routine{enabled === 1 ? '' : 's'} armed</h2>
-          <p>Catch-up is off. Missed windows are skipped, so runs never pile up after downtime.</p>
-        </div>
-        <div className="automation-hero-stats">
+      <div className="metric-strip automation-summary reveal delay-1">
+        <div className="metric">
+          <span className="metric-icon neutral"><CalendarClock size={17} /></span>
           <div><strong>{automations.length}</strong><span>Automations</span></div>
-          <div><strong>{enabled}</strong><span>Enabled</span></div>
-          <div><strong>{totalRuns}</strong><span>All runs</span></div>
         </div>
-        <div className="hero-grid-lines" />
+        <div className="metric">
+          <span className="metric-icon orange"><Power size={17} /></span>
+          <div><strong>{enabled}</strong><span>Enabled</span></div>
+        </div>
+        <div className="metric">
+          <span className="metric-icon blue"><History size={17} /></span>
+          <div><strong>{totalRuns}</strong><span>Runs</span></div>
+        </div>
       </div>
 
       <section className="content-section reveal delay-2">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Automation fleet</p>
-            <h2>Scheduled agents</h2>
+            <h2>Scheduled automations</h2>
           </div>
-          <span className="section-note">Times shown in your local timezone</span>
+          <span className="section-note">Times use your local timezone</span>
         </div>
         {automations.length ? (
           <div className="automation-grid">
@@ -150,17 +147,17 @@ export default function AutomationsPage() {
             ))}
             <button type="button" className="automation-add-card reveal" onClick={() => navigate('/automations/new')}>
               <span><Plus size={20} /></span>
-              <strong>Add a routine</strong>
-              <small>Schedule the next piece of work.</small>
+              <strong>New automation</strong>
+              <small>Create a scheduled agent.</small>
             </button>
           </div>
         ) : (
           <EmptyState
             icon={CalendarClock}
             title="No automations yet"
-            body="Create a recurring agent, attach a cron trigger, and let it work while you’re away."
+            body="Scheduled agents that run in your repositories will appear here."
             action={() => navigate('/automations/new')}
-            actionLabel="Create your first automation"
+            actionLabel="Create one"
           />
         )}
       </section>

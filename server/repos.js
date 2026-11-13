@@ -80,3 +80,14 @@ export async function validateRepo(repoDir) {
   }
   return actual;
 }
+
+export async function checkRepo(repoDir) {
+  try {
+    assertAllowedRepo(repoDir);
+    const actual = await realpath(repoDir);
+    if (!(await isDirectory(actual))) return { exists: false, isGit: false };
+    return { exists: true, isGit: await hasGit(actual) };
+  } catch {
+    return { exists: false, isGit: false };
+  }
+}

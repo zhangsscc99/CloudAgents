@@ -26,7 +26,13 @@ import {
 import { api } from '../api.js';
 import { useRemote } from '../hooks.js';
 import { formatDate, formatDuration, formatRelative, repoName } from '../utils.js';
-import { ErrorState, Loading, StatusBadge, Toggle } from '../components/Common.jsx';
+import {
+  ErrorState,
+  Loading,
+  RepoDirectoryField,
+  StatusBadge,
+  Toggle,
+} from '../components/Common.jsx';
 
 const SCHEDULE_TYPES = [
   { value: 'custom', label: 'Custom schedule' },
@@ -331,8 +337,8 @@ function HistoryView({ runs, stats }) {
       <section className="table-panel history-table-panel">
         <div className="history-table-head">
           <div>
-            <h2>Run history</h2>
-            <p>Recent executions for this automation.</p>
+            <h2>Runs</h2>
+            <p>Runs for this automation.</p>
           </div>
           <span>{runs.length} records</span>
         </div>
@@ -386,8 +392,8 @@ function HistoryView({ runs, stats }) {
         ) : (
           <div className="history-empty">
             <History size={22} />
-            <p>No executions recorded yet.</p>
-            <span>Use Test to start the first run.</span>
+            <p>No runs yet.</p>
+            <span>Use Test to start a run.</span>
           </div>
         )}
       </section>
@@ -634,7 +640,7 @@ export default function AutomationEditorPage() {
     const loadError = error || config.error || repos.error;
     if (loadError) return <ErrorState message={loadError} onRetry={() => window.location.reload()} />;
     if (loading || config.loading || repos.loading) {
-      return <Loading label={automationId ? 'Opening automation…' : 'Creating a new automation…'} />;
+      return <Loading label={automationId ? 'Loading automation…' : 'Loading editor…'} />;
     }
     return <ErrorState message="The automation editor could not be prepared." />;
   }
@@ -698,7 +704,7 @@ export default function AutomationEditorPage() {
           onClick={() => update('enabled', !form.enabled)}
         >
           <span className="state-switch-track"><span /></span>
-          <span>{form.enabled ? 'Active' : 'Inactive'}</span>
+          <span>{form.enabled ? 'Enabled' : 'Paused'}</span>
         </button>
         <span className="automation-meta-chip" title={form.repo_dir}>
           <FolderGit2 size={13} />
@@ -723,7 +729,7 @@ export default function AutomationEditorPage() {
           onClick={() => setSearchParams({ tab: 'history' })}
           disabled={!automationId}
         >
-          Run History
+          Runs
           {automationId && <span>{stats.total || 0}</span>}
         </button>
       </div>
@@ -734,12 +740,28 @@ export default function AutomationEditorPage() {
         <HistoryView runs={runs} stats={stats} />
       ) : (
         <form className="automation-settings reveal delay-1" onSubmit={save}>
+          <section className="settings-section working-directory-section">
+            <div className="section-title-row">
+              <div>
+                <h2>Working directory</h2>
+                <p>Choose a repository or enter a directory path.</p>
+              </div>
+            </div>
+            <RepoDirectoryField
+              repos={repos.data?.repos || []}
+              value={form.repo_dir}
+              onChange={(value) => update('repo_dir', value)}
+              inputId="automation-repo-directory"
+              listId="automation-repo-options"
+              required
+            />
+          </section>
+
           <section className="settings-section triggers-section">
             <div className="section-title-row">
               <div>
-                <span className="section-kicker">Schedule</span>
                 <h2>Triggers</h2>
-                <p>Choose when this automation should run. Timezone applies to every schedule below.</p>
+                <p>Choose when this automation runs.</p>
               </div>
               <label className="timezone-picker">
                 <span>Timezone</span>
@@ -761,7 +783,7 @@ export default function AutomationEditorPage() {
               ))}
             </div>
             <button type="button" className="add-trigger-button" onClick={addTrigger}>
-              <Plus size={15} /> Add Trigger
+              <Plus size={15} /> Add trigger
             </button>
             {form.triggers.length === 0 && <p className="field-error">Add at least one trigger to save this automation.</p>}
           </section>
@@ -769,9 +791,8 @@ export default function AutomationEditorPage() {
           <section className="settings-section">
             <div className="section-title-row">
               <div>
-                <span className="section-kicker">Prompt</span>
-                <h2>Agent Instructions</h2>
-                <p>Describe the outcome, constraints, and verification steps for each run.</p>
+                <h2>Instructions</h2>
+                <p>Describe the task and how Codex should verify it.</p>
               </div>
             </div>
             <textarea
@@ -792,9 +813,8 @@ export default function AutomationEditorPage() {
           <section className="settings-section model-section">
             <div className="section-title-row">
               <div>
-                <span className="section-kicker">Execution</span>
                 <h2>Model & effort</h2>
-                <p>Pick the model and reasoning depth for scheduled and test runs.</p>
+                <p>Choose the model and reasoning effort.</p>
               </div>
             </div>
             <div className="model-picker-row">
@@ -820,16 +840,15 @@ export default function AutomationEditorPage() {
           <section className="settings-section tools-section">
             <div className="section-title-row">
               <div>
-                <span className="section-kicker">Capabilities</span>
                 <h2>Tools</h2>
-                <p>Add post-run actions and durable context to every execution.</p>
+                <p>Configure optional actions and persistent context.</p>
               </div>
             </div>
             <div className="tool-list">
               <div className={`tool-row ${form.tool_push_branch ? 'enabled' : ''}`}>
                 <span className="tool-option-icon"><GitBranch size={17} /></span>
                 <div className="tool-row-copy">
-                  <strong>Open Pull Request</strong>
+                  <strong>Open pull request</strong>
                   <span>Push the branch after a successful run.</span>
                 </div>
                 <button type="button" className="text-action" onClick={() => setManagingTool(managingTool === 'push' ? '' : 'push')}>
@@ -847,7 +866,7 @@ export default function AutomationEditorPage() {
                   type="button"
                   className="icon-button quiet"
                   onClick={() => update('tool_push_branch', false)}
-                  aria-label="Remove Open Pull Request tool"
+                  aria-label="Remove pull request action"
                 >
                   <X size={14} />
                 </button>
@@ -890,7 +909,7 @@ export default function AutomationEditorPage() {
                     checked={form.memories_enabled}
                     onChange={(value) => update('memories_enabled', value)}
                     label="Use persistent context"
-                    description="The notes below are appended to the Agent Instructions at run time."
+                    description="Append the notes below to the instructions at run time."
                   />
                   {form.memories_enabled && (
                     <label className="field memory-notes">
@@ -900,7 +919,7 @@ export default function AutomationEditorPage() {
                         rows={4}
                         value={form.memory_notes}
                         onChange={(event) => update('memory_notes', event.target.value)}
-                        placeholder="Conventions, environments, or context Codex should remember on every run…"
+                        placeholder="Add repository conventions or context for every run."
                       />
                     </label>
                   )}

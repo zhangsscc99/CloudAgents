@@ -16,7 +16,7 @@ import {
   PORT,
   TIMEZONES,
 } from './config.js';
-import { discoverRepos, validateRepo } from './repos.js';
+import { checkRepo, discoverRepos, validateRepo } from './repos.js';
 import { runBus, runManager } from './run-manager.js';
 import {
   createAutomationRun,
@@ -201,6 +201,11 @@ app.get('/api/config', async () => ({
 }));
 
 app.get('/api/repos', async () => ({ repos: await discoverRepos() }));
+
+app.get('/api/repos/check', async (request) => {
+  const path = typeof request.query.path === 'string' ? request.query.path.trim() : '';
+  return checkRepo(path);
+});
 
 app.get('/api/agents', async () => {
   const repos = await discoverRepos();
