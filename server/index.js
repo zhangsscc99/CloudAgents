@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
+import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
@@ -68,6 +69,18 @@ function cleanTimezone(value) {
     throw new Error('Invalid timezone');
   }
   return timezone;
+}
+
+function getGitUser() {
+  try {
+    return execFileSync('git', ['config', 'user.name'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim() || 'Local user';
+  } catch {
+    return 'Local user';
+  }
 }
 
 function getAutomation(id) {
@@ -182,6 +195,8 @@ app.get('/api/config', async () => ({
   defaults: { model: DEFAULT_MODEL, effort: DEFAULT_EFFORT },
   timezones: TIMEZONES,
   cronPresets: CRON_PRESETS,
+  gitUser: getGitUser(),
+  runtime: { node: process.versions.node, sqlite: 'sqlite' },
   nodePath: '/root/.nvm/versions/node/v24.5.0/bin',
 }));
 
@@ -258,7 +273,21 @@ app.get('/api/runs', async (request) => {
   const limit = Math.min(Math.max(Number(request.query.limit) || 100, 1), 250);
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const rows = db.prepare(`SELECT * FROM runs ${where} ORDER BY created_at DESC LIMIT ?`).all(...params, limit);
-  return { runs: rows.map(rowToRun) };
+  const now = Date.now();
+  const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const stats = db.prepare(`
+    SELECT
+      SUM(CASE WHEN status = 'succeeded' AND created_at >= ? THEN 1 ELSE 0 END) AS successful_24h,
+      SUM(CASE WHEN status = 'failed' AND created_at >= ? THEN 1 ELSE 0 END) AS failed_24h,
+      SUM(CASE WHEN status = 'succeeded' AND created_at >= ? THEN 1 ELSE 0 END) AS successful_7d,
+      SUM(CASE WHEN status = 'failed' AND created_at >= ? THEN 1 ELSE 0 END) AS failed_7d
+    FROM runs
+  `).get(dayAgo, dayAgo, weekAgo, weekAgo);
+  return {
+    runs: rows.map(rowToRun),
+    stats: Object.fromEntries(Object.entries(stats).map(([key, value]) => [key, Number(value || 0)])),
+  };
 });
 
 app.post('/api/runs', async (request, reply) => {

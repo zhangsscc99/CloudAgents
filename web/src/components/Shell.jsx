@@ -7,7 +7,6 @@ import {
   Command,
   Plus,
   Radio,
-  Sparkles,
 } from 'lucide-react';
 
 const primaryLinks = [
@@ -49,7 +48,10 @@ export default function Shell() {
             <span />
             <span />
           </span>
-          <span className="brand-word">Cloud<span>Agents</span></span>
+          <span className="brand-copy">
+            <span className="brand-word">CloudAgents</span>
+            <span className="brand-context">Local workspace</span>
+          </span>
         </NavLink>
 
         <nav className="nav-stack">
@@ -63,13 +65,12 @@ export default function Shell() {
         <div className="runtime-card">
           <div className="runtime-heading">
             <span className="live-dot" />
-            <span>Local runtime</span>
+            <span>Local runtime · codex executes on this host</span>
             <Radio size={13} />
           </div>
-          <p>Codex executes directly on this host.</p>
           <div className="runtime-meta">
-            <span>Node 24</span>
-            <span>SQLite</span>
+            <span>node v24</span>
+            <span>sqlite</span>
           </div>
         </div>
         <div className="sidebar-footer">
@@ -83,7 +84,10 @@ export default function Shell() {
         <header className="mobile-header">
           <NavLink to="/agents" className="brand compact">
             <span className="brand-mark" aria-hidden="true"><span /><span /><span /><span /></span>
-            <span className="brand-word">CloudAgents</span>
+            <span className="brand-copy">
+              <span className="brand-word">CloudAgents</span>
+              <span className="brand-context">Local workspace</span>
+            </span>
           </NavLink>
           <div className="mobile-context">
             <ChevronRight size={14} />
