@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api.js';
 import { useRemote } from '../hooks.js';
-import { formatDate, formatDuration, formatRelative, repoName } from '../utils.js';
+import { formatDate, formatDuration, formatRelative, repoName, uid } from '../utils.js';
 import {
   ErrorState,
   Loading,
@@ -85,7 +85,7 @@ function triggerFromSaved(trigger) {
 
 function newTrigger(timezone) {
   return {
-    id: crypto.randomUUID(),
+    id: uid(),
     type: 'cron',
     expression: '0 9 * * *',
     timezone,
@@ -607,7 +607,7 @@ export default function AutomationEditorPage() {
       const result = await api.post('/api/automations', {
         ...payload(),
         name: `${form.name} copy`,
-        triggers: form.triggers.map((trigger) => ({ ...trigger, id: crypto.randomUUID() })),
+        triggers: form.triggers.map((trigger) => ({ ...trigger, id: uid() })),
       });
       navigate(`/automations/${result.automation.id}`);
     } catch (duplicateError) {
