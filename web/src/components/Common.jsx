@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -106,6 +106,48 @@ export function RepoDirectoryField({
 }) {
   const [directory, setDirectory] = useState(null);
   const listed = repos.find((repo) => repo.path === value);
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const rootRef = useRef(null);
+
+  const filteredRepos = useMemo(() => {
+    const query = value.trim().toLowerCase();
+    if (!query) return repos;
+    const exact = repos.some((repo) => repo.path === value.trim());
+    if (exact) return repos;
+    return repos.filter((repo) =>
+      repo.path.toLowerCase().includes(query) || String(repo.name || '').toLowerCase().includes(query));
+  }, [repos, value]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open]);
+
+  const selectRepo = (path) => {
+    onChange(path);
+    setOpen(false);
+  };
+
+  const onKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setOpen(true);
+      setHighlight((current) => {
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
+        return (current + delta + filteredRepos.length) % Math.max(filteredRepos.length, 1);
+      });
+    } else if (event.key === 'Enter' && open && filteredRepos[highlight]) {
+      event.preventDefault();
+      selectRepo(filteredRepos[highlight].path);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  };
 
   useEffect(() => {
     const path = value.trim();
@@ -158,28 +200,57 @@ export function RepoDirectoryField({
   }
 
   return (
-    <div className="directory-picker">
+    <div className="directory-picker" ref={rootRef}>
       <input
         id={inputId}
         className="input mono"
-        list={listId}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setOpen(true);
+          setHighlight(0);
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={onKeyDown}
         placeholder="/www/project"
         autoComplete="off"
         spellCheck="false"
         aria-label="Working directory"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${listId}-menu`}
         required={required}
         aria-describedby={`${listId}-hint`}
         aria-invalid={displayed && !displayed.checking && !displayed.exists ? 'true' : undefined}
       />
-      <datalist id={listId}>
-        {repos.map((repo) => (
-          <option key={repo.path} value={repo.path} label={`${repo.name} — ${repo.path}`}>
-            {repo.name} — {repo.path}
-          </option>
-        ))}
-      </datalist>
+      {open && (
+        <div className="directory-menu" id={`${listId}-menu`} role="listbox">
+          {filteredRepos.length === 0 && (
+            <div className="directory-empty">No matching directories. Path is used as typed.</div>
+          )}
+          {filteredRepos.map((repo, index) => (
+            <button
+              type="button"
+              key={repo.path}
+              role="option"
+              aria-selected={repo.path === value}
+              className={`directory-option${index === highlight ? ' is-active' : ''}${repo.path === value ? ' is-selected' : ''}`}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                selectRepo(repo.path);
+              }}
+              onMouseEnter={() => setHighlight(index)}
+            >
+              <span className="directory-option-name">
+                <FolderGit2 size={13} />
+                {repo.name}
+                {repo.isGit && <span className="directory-option-badge">git</span>}
+              </span>
+              <span className="directory-option-path mono">{repo.path}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div id={`${listId}-hint`} className={`input-hint directory-hint ${hintClass}`}>
         {displayed && !displayed.checking && displayed.isGit && (
           <span className="mini-check"><Check size={11} /></span>
