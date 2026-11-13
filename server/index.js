@@ -529,7 +529,6 @@ if (existsSync(webDist)) {
     root: webDist,
     prefix: '/',
     decorateReply: true,
-    wildcard: false,
   });
 }
 
