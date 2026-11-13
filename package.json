@@ -1,0 +1,36 @@
+{
+  "name": "cloudagents",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cursor-style cloud agents powered by the local Codex CLI",
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "node --watch server/index.js",
+    "dev:web": "vite --config web/vite.config.js",
+    "build": "vite build --config web/vite.config.js",
+    "start": "npm run build && node server/index.js"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.10",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/instrument-sans": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "better-sqlite3": "^12.4.1",
+    "croner": "^9.1.0",
+    "fastify": "^5.6.2",
+    "lucide-react": "^0.468.0",
+    "pino-pretty": "^13.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.1",
+    "vite": "^6.4.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
