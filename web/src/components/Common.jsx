@@ -317,3 +317,139 @@ export function PageIntro({ eyebrow, title, description, actions }) {
     </header>
   );
 }
+
+export function SearchableSelect({
+  options = [],
+  value = '',
+  onChange,
+  placeholder = 'Select…',
+  inputId = 'searchable-select',
+  ariaLabel = 'Select option',
+  allowCustom = true,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [highlight, setHighlight] = useState(0);
+  const rootRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((option) => option.toLowerCase().includes(q));
+  }, [options, query]);
+
+  const custom = query.trim();
+  const canUseCustom = allowCustom && custom.length > 0 && !options.includes(custom);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    setQuery('');
+    setHighlight(0);
+    const frame = requestAnimationFrame(() => searchRef.current?.focus());
+    const onPointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [open]);
+
+  const select = (option) => {
+    onChange(option);
+    setOpen(false);
+  };
+
+  const onSearchKeyDown = (event) => {
+    const count = filtered.length + (canUseCustom ? 1 : 0);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      setHighlight((current) => (current + delta + count) % Math.max(count, 1));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (filtered[highlight]) select(filtered[highlight]);
+      else if (canUseCustom) select(custom);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="directory-picker" ref={rootRef}>
+      <input
+        id={inputId}
+        className="input directory-display"
+        value={value}
+        readOnly
+        onClick={() => setOpen(true)}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck="false"
+        role="combobox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+      />
+      {open && (
+        <div className="directory-menu">
+          <div className="directory-search">
+            <Search size={13} />
+            <input
+              ref={searchRef}
+              className="directory-search-input"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setHighlight(0);
+              }}
+              onKeyDown={onSearchKeyDown}
+              placeholder="Search…"
+              spellCheck="false"
+              autoComplete="off"
+            />
+          </div>
+          <div className="directory-list" role="listbox">
+            {filtered.map((option, index) => (
+              <button
+                type="button"
+                key={option}
+                role="option"
+                aria-selected={option === value}
+                className={`directory-option${index === highlight ? ' is-active' : ''}${option === value ? ' is-selected' : ''}`}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  select(option);
+                }}
+                onMouseEnter={() => setHighlight(index)}
+              >
+                <span className="directory-option-name">{option}</span>
+              </button>
+            ))}
+            {canUseCustom && (
+              <button
+                type="button"
+                role="option"
+                aria-selected="false"
+                className={`directory-option${highlight === filtered.length ? ' is-active' : ''}`}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  select(custom);
+                }}
+                onMouseEnter={() => setHighlight(filtered.length)}
+              >
+                <span className="directory-option-name">Use custom value</span>
+                <span className="directory-option-path mono">{custom}</span>
+              </button>
+            )}
+            {filtered.length === 0 && !canUseCustom && (
+              <div className="directory-empty">No options found.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -12,7 +12,7 @@ import {
 import { api } from '../api.js';
 import { useRemote } from '../hooks.js';
 import { repoName } from '../utils.js';
-import { ErrorState, Loading, RepoDirectoryField, Segmented, Toggle } from '../components/Common.jsx';
+import { ErrorState, Loading, RepoDirectoryField, SearchableSelect, Segmented, Toggle } from '../components/Common.jsx';
 
 const effortCopy = {
   low: 'Low',
@@ -134,17 +134,15 @@ export default function NewAgentPage() {
 
         <div className="config-panel">
           <div className="panel-label"><Sparkles size={15} /> Model</div>
-          <input
-            className="input"
-            list="model-options"
+          <SearchableSelect
+            options={config.data?.models || []}
             value={form.model}
-            onChange={(event) => update('model', event.target.value)}
-            required
+            onChange={(value) => update('model', value)}
+            inputId="new-agent-model"
+            ariaLabel="Model"
+            placeholder="deepseek-flash"
           />
-          <datalist id="model-options">
-            {config.data?.models?.map((model) => <option key={model} value={model} />)}
-          </datalist>
-          <div className="input-hint">Use a preset or enter any model ID.</div>
+          <div className="input-hint">Pick a preset or type any model ID.</div>
         </div>
 
         <div className="config-panel full-span">
