@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   FolderGit2,
+  Search,
   LoaderCircle,
   RefreshCw,
   XCircle,
@@ -105,27 +106,36 @@ export function RepoDirectoryField({
   required = false,
 }) {
   const [directory, setDirectory] = useState(null);
-  const listed = repos.find((repo) => repo.path === value);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef(null);
+  const searchRef = useRef(null);
 
   const filteredRepos = useMemo(() => {
-    const query = value.trim().toLowerCase();
-    if (!query) return repos;
-    const exact = repos.some((repo) => repo.path === value.trim());
-    if (exact) return repos;
+    const q = query.trim().toLowerCase();
+    if (!q) return repos;
     return repos.filter((repo) =>
-      repo.path.toLowerCase().includes(query) || String(repo.name || '').toLowerCase().includes(query));
-  }, [repos, value]);
+      repo.path.toLowerCase().includes(q) || String(repo.name || '').toLowerCase().includes(q));
+  }, [repos, query]);
+
+  const customPath = query.trim();
+  const canUseCustom = customPath.length > 0
+    && !repos.some((repo) => repo.path === customPath);
 
   useEffect(() => {
     if (!open) return undefined;
+    setQuery('');
+    setHighlight(0);
+    const frame = requestAnimationFrame(() => searchRef.current?.focus());
     const onPointerDown = (event) => {
       if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
     };
     document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('mousedown', onPointerDown);
+    };
   }, [open]);
 
   const selectRepo = (path) => {
@@ -133,17 +143,16 @@ export function RepoDirectoryField({
     setOpen(false);
   };
 
-  const onKeyDown = (event) => {
+  const onSearchKeyDown = (event) => {
+    const count = filteredRepos.length + (canUseCustom ? 1 : 0);
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
-      setOpen(true);
-      setHighlight((current) => {
-        const delta = event.key === 'ArrowDown' ? 1 : -1;
-        return (current + delta + filteredRepos.length) % Math.max(filteredRepos.length, 1);
-      });
-    } else if (event.key === 'Enter' && open && filteredRepos[highlight]) {
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      setHighlight((current) => (current + delta + count) % Math.max(count, 1));
+    } else if (event.key === 'Enter') {
       event.preventDefault();
-      selectRepo(filteredRepos[highlight].path);
+      if (filteredRepos[highlight]) selectRepo(filteredRepos[highlight].path);
+      else if (canUseCustom) selectRepo(customPath);
     } else if (event.key === 'Escape') {
       setOpen(false);
     }
@@ -157,9 +166,11 @@ export function RepoDirectoryField({
     }
 
     const known = repos.find((repo) => repo.path === path);
-    setDirectory(known
-      ? { exists: true, isGit: known.isGit, checking: true }
-      : { exists: false, isGit: false, checking: true });
+    if (known) {
+      setDirectory({ exists: true, isGit: known.isGit, checking: false });
+      return undefined;
+    }
+    setDirectory({ exists: false, isGit: false, checking: true });
 
     let cancelled = false;
     const timer = window.setTimeout(async () => {
@@ -177,9 +188,7 @@ export function RepoDirectoryField({
     };
   }, [repos, value]);
 
-  const displayed = listed && (!directory || directory.checking)
-    ? { exists: true, isGit: listed.isGit, checking: false }
-    : directory;
+  const displayed = directory;
   const hintClass = displayed?.failed || (displayed && !displayed.checking && !displayed.exists)
     ? 'is-error'
     : displayed?.exists && displayed.isGit
@@ -203,15 +212,11 @@ export function RepoDirectoryField({
     <div className="directory-picker" ref={rootRef}>
       <input
         id={inputId}
-        className="input mono"
+        className="input mono directory-display"
         value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-          setOpen(true);
-          setHighlight(0);
-        }}
+        readOnly
+        onClick={() => setOpen(true)}
         onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
         placeholder="/www/project"
         autoComplete="off"
         spellCheck="false"
@@ -224,31 +229,65 @@ export function RepoDirectoryField({
         aria-invalid={displayed && !displayed.checking && !displayed.exists ? 'true' : undefined}
       />
       {open && (
-        <div className="directory-menu" id={`${listId}-menu`} role="listbox">
-          {filteredRepos.length === 0 && (
-            <div className="directory-empty">No matching directories. Path is used as typed.</div>
-          )}
-          {filteredRepos.map((repo, index) => (
-            <button
-              type="button"
-              key={repo.path}
-              role="option"
-              aria-selected={repo.path === value}
-              className={`directory-option${index === highlight ? ' is-active' : ''}${repo.path === value ? ' is-selected' : ''}`}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                selectRepo(repo.path);
+        <div className="directory-menu" id={`${listId}-menu`}>
+          <div className="directory-search">
+            <Search size={13} />
+            <input
+              ref={searchRef}
+              className="directory-search-input mono"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setHighlight(0);
               }}
-              onMouseEnter={() => setHighlight(index)}
-            >
-              <span className="directory-option-name">
-                <FolderGit2 size={13} />
-                {repo.name}
-                {repo.isGit && <span className="directory-option-badge">git</span>}
-              </span>
-              <span className="directory-option-path mono">{repo.path}</span>
-            </button>
-          ))}
+              onKeyDown={onSearchKeyDown}
+              placeholder="Search directories…"
+              spellCheck="false"
+              autoComplete="off"
+            />
+          </div>
+          <div className="directory-list" role="listbox">
+            {filteredRepos.map((repo, index) => (
+              <button
+                type="button"
+                key={repo.path}
+                role="option"
+                aria-selected={repo.path === value}
+                className={`directory-option${index === highlight ? ' is-active' : ''}${repo.path === value ? ' is-selected' : ''}`}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  selectRepo(repo.path);
+                }}
+                onMouseEnter={() => setHighlight(index)}
+              >
+                <span className="directory-option-name">
+                  <FolderGit2 size={13} />
+                  {repo.name}
+                  {repo.isGit && <span className="directory-option-badge">git</span>}
+                </span>
+                <span className="directory-option-path mono">{repo.path}</span>
+              </button>
+            ))}
+            {canUseCustom && (
+              <button
+                type="button"
+                role="option"
+                aria-selected="false"
+                className={`directory-option${highlight === filteredRepos.length ? ' is-active' : ''}`}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  selectRepo(customPath);
+                }}
+                onMouseEnter={() => setHighlight(filteredRepos.length)}
+              >
+                <span className="directory-option-name">Use custom path</span>
+                <span className="directory-option-path mono">{customPath}</span>
+              </button>
+            )}
+            {filteredRepos.length === 0 && !canUseCustom && (
+              <div className="directory-empty">No directories found.</div>
+            )}
+          </div>
         </div>
       )}
       <div id={`${listId}-hint`} className={`input-hint directory-hint ${hintClass}`}>
@@ -264,6 +303,7 @@ export function RepoDirectoryField({
     </div>
   );
 }
+
 
 export function PageIntro({ eyebrow, title, description, actions }) {
   return (
