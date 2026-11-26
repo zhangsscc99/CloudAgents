@@ -1,4 +1,6 @@
 export const MODELS = [
+  'glm-5.3-flash',
+  'glm-5.3',
   'deepseek-flash',
   'deepseek-v4-pro',
   'gpt-5.1-codex',
@@ -9,7 +11,7 @@ export const MODELS = [
 
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
 
-export const DEFAULT_MODEL = 'deepseek-flash';
+export const DEFAULT_MODEL = 'glm-5.3-flash';
 export const DEFAULT_EFFORT = 'medium';
 export const PORT = Number(process.env.PORT || 9100);
 export const HOST = process.env.HOST || '0.0.0.0';
